@@ -7,7 +7,7 @@
 
 1. On the SWISSIMAGE page:
 
-   * Mode de sélection → **Sélection par canton** → **Ticino**
+   * Mode de sélection → **Sélection par canton** → **Geneva**
    * Format: **Cloud Optimized GeoTIFF**
    * Résolution: **0.1 m**
    * Système de coordonnées: **MN95 (LV95 / EPSG:2056)**
