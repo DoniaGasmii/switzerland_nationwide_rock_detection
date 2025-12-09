@@ -1,81 +1,85 @@
 #!/usr/bin/env python3
 """
-Crop large SWISSIMAGE / DSM GeoTIFFs into smaller 640x640 patches
-and resample them to 0.5 m/pixel resolution.
+Crop GeoTIFF tiles (SWISSIMAGE, DSM, or Hillshade) into smaller 640x640 patches,
+optionally resampling to a target ground resolution.
 
-Usage:
-    python scripts/crop_resample_tiles.py \
-        --src data/raw/canton_valais/swissimage \
-        --out data/tiles/canton_valais/swissimage_50cm \
-        --tilesize 640 \
-        --resolution 0.5 \
-        --overlap 210
+Usage examples:
+---------------
+# SWISSIMAGE (0.1 m → 0.5 m)
+python scripts/preprocessing/crop_resample_tiles.py \
+  --src data/raw/canton_valais/swissimage \
+  --out data/tiles/canton_valais/swissimage_50cm \
+  --src_res 0.1 --dst_res 0.5 --tilesize 640 --overlap 210
 
-Notes:
-- Uses gdal_translate under the hood.
-- Works for both 10 cm (SWISSIMAGE) and 50 cm (DSM) inputs.
+# Hillshade (already 0.5 m)
+python scripts/preprocessing/crop_resample_tiles.py \
+  --src data/raw/canton_valais/hillshade \
+  --out data/tiles/canton_valais/hillshade_patches \
+  --src_res 0.5 --dst_res 0.5 --tilesize 640 --overlap 210
+
+# Quiet mode (no GDAL progress or prints)
+python scripts/preprocessing/crop_resample_tiles.py \
+  --src ... --out ... --src_res 0.5 --dst_res 0.5 --quiet
 """
 
-import os
 import argparse
 from pathlib import Path
 import subprocess
 
-def run_cmd(cmd):
-    """Run a shell command safely."""
+def run_cmd(cmd: str, quiet: bool):
+    """Run shell command safely."""
     try:
-        subprocess.run(cmd, shell=True, check=True)
+        if quiet:
+            subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        else:
+            subprocess.run(cmd, shell=True, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"⚠️  Error while executing:\n{cmd}\n{e}")
+        print(f"⚠️ Error while executing:\n{cmd}\n{e}")
 
 def main():
-    parser = argparse.ArgumentParser(description="Crop and resample GeoTIFF tiles to 50 cm.")
+    parser = argparse.ArgumentParser(description="Crop GeoTIFF tiles into smaller patches.")
     parser.add_argument("--src", required=True, help="Source folder with .tif files.")
     parser.add_argument("--out", required=True, help="Output folder for cropped/resampled tiles.")
-    parser.add_argument("--tilesize", type=int, default=640, help="Tile size in pixels (after resampling).")
-    parser.add_argument("--resolution", type=float, default=0.5, help="Target ground resolution (m/pixel).")
+    parser.add_argument("--src_res", type=float, required=True, help="Source ground resolution (m/pixel).")
+    parser.add_argument("--dst_res", type=float, required=True, help="Target ground resolution (m/pixel).")
+    parser.add_argument("--tilesize", type=int, default=640, help="Tile size in pixels after resampling.")
     parser.add_argument("--overlap", type=int, default=210, help="Overlap in pixels between tiles.")
+    parser.add_argument("--quiet", action="store_true", help="Suppress progress and print output.")
     args = parser.parse_args()
 
     src_dir = Path(args.src)
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Tile size in source pixels (before resampling)
-    # For SWISSIMAGE 0.1 m -> multiply by 5; for DSM 0.5 m -> multiply by 1
-    # The script assumes the resolution difference is handled by -tr
-    step = args.overlap
-    tile_size_px = args.tilesize
+    # scaling factor between input and output resolution
+    scale = args.dst_res / args.src_res
+    stride = args.tilesize - args.overlap
+    offsets = [0, int(stride / scale), int((stride * 2) / scale), int((stride * 3) / scale)]
 
-    # Convert overlap to step distance between tiles (stride)
-    stride = tile_size_px - args.overlap
-
-    print(f"➡️  Cutting tiles from {src_dir}")
-    print(f"    Tile size: {tile_size_px}px, stride: {stride}px, target res: {args.resolution}m")
+    if not args.quiet:
+        print(f"➡️ Cutting tiles from {src_dir}")
+        print(f"   Source res: {args.src_res} m | Target res: {args.dst_res} m | Scale: {scale:.1f}×")
+        print(f"   Tile size: {args.tilesize}px | Overlap: {args.overlap}px | Stride: {stride}px")
 
     for tif_path in sorted(src_dir.glob("*.tif")):
-        print(f"Processing {tif_path.name} ...")
-        # Define pixel offsets for a 4x4 grid (like in your boss's script)
-        offsets = [0, 430 * 5, 930 * 5, 1360 * 5]  # these match 1 km tiles for 0.1 m input
         for idx_i, i in enumerate(offsets):
             for idx_j, j in enumerate(offsets):
-                out_name = (
-                    f"{tif_path.stem}_{idx_i}_{idx_j}.tif"
-                )
+                out_name = f"{tif_path.stem}_{idx_i}_{idx_j}.tif"
                 out_path = out_dir / out_name
                 if out_path.exists():
                     continue
-
+                # add -q to disable GDAL’s verbose output
                 cmd = (
-                    f"gdal_translate -of GTiff "
-                    f"-srcwin {i} {j} {tile_size_px*5} {tile_size_px*5} "  # crop window in source pixels
-                    f"-tr {args.resolution} {args.resolution} "
+                    f"gdal_translate {'-q ' if args.quiet else ''}-of GTiff "
+                    f"-srcwin {i} {j} {int(args.tilesize/scale)} {int(args.tilesize/scale)} "
+                    f"-tr {args.dst_res} {args.dst_res} "
                     f"-r cubic -co COMPRESS=LZW -co TILED=YES "
                     f"{tif_path} {out_path}"
                 )
-                run_cmd(cmd)
+                run_cmd(cmd, args.quiet)
 
-    print(f"✅ Cropping complete. Results saved to: {out_dir}")
+    if not args.quiet:
+        print(f"✅ Cropping complete. Results saved to: {out_dir}")
 
 if __name__ == "__main__":
     main()
