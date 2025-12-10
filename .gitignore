@@ -1,4 +1,13 @@
 # Ignore the entire data folder
 data/
 
-models/
+# Ignore model weights but keep the models folder structure
+models/*.pt
+models/**/*.pt
+
+# Ignore outputs folder (YOLO inference results)
+outputs/
+
+# Optional: Keep directory structure with .gitkeep files
+!models/.gitkeep
+!outputs/.gitkeep
