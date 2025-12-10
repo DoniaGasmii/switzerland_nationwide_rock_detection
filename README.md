@@ -185,7 +185,7 @@ pip install ultralytics rasterio geopandas shapely numpy opencv-python
 
 ## Documentation
 
-- **Model improvements:** See [models/improvements.md](models/IMPROVEMENTS.md) for detailed experiment tracking
+- **Model improvements:** See [models/improvements.md](models/improvements.md) for detailed experiment tracking
 
 ---
 
