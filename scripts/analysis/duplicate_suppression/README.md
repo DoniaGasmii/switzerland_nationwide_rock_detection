@@ -1,15 +1,24 @@
-# Duplicate Suppression Analysis
+# Duplicate Suppression
 
-This folder contains scripts for analyzing and removing duplicate rock detections caused by overlapping patches.
+![alt text](image.png)
+
+Scripts for detecting and removing duplicate rock detections caused by overlapping patches during tile processing.
+
+---
 
 ## Problem
 
-When a 1km×1km tile is split into overlapping 640×640 patches (with 210px overlap), rocks in overlap regions get detected multiple times, creating duplicate bounding boxes.
+When extracting 640×640 patches from 1km tiles with 210px overlap:
+- **Overlap region:** 210×210 pixels at each patch boundary
+- **Result:** Rocks in overlap regions detected multiple times
+- **Impact:** Inflates false positive count in final predictions
+
+---
 
 ## Scripts
 
-### 1. `find_duplicates_from_labels.py` 
-Finds real duplicates by converting patch-local YOLO coordinates to tile-global coordinates.
+### `find_duplicates_from_labels.py`
+Finds duplicate detections by converting patch-local to tile-global coordinates.
 
 **Usage:**
 ```bash
@@ -17,41 +26,105 @@ python scripts/analysis/duplicate_suppression/find_duplicates_from_labels.py
 ```
 
 **Output:**
-- Console: List of real duplicate pairs
+- Console: Summary of duplicates per tile
 - File: `outputs/duplicate_suppression/real_duplicates.txt`
 
----
-
-## Expected Results
-
-### If TIFs have proper georeferencing:
-- Both methods should find similar numbers of duplicates
-- Shapefile method is faster and easier
-
-### If TIFs lack georeferencing:
-- Shapefile method finds FALSE POSITIVES
-- Label-based method is correct
-- Need to either:
-  - Fix preprocessing to preserve georeferencing, OR
-  - Use label-based method for duplicate removal
+**How it works:**
+1. Groups patches by tile ID (e.g., `2781_1141`)
+2. Converts normalized YOLO coords to global tile pixels:
+   ```
+   stride = 640 - 210 = 430 pixels
+   global_x = (cx * 640) + (col * stride)
+   global_y = (cy * 640) + (row * stride)
+   ```
+3. Compares all box pairs between overlapping patches
+4. Marks as duplicate if distance < 15 pixels (~7.5m)
 
 ---
 
-## Parameters
+### `visualize_real_duplicates.py`
+Creates side-by-side visualizations showing all duplicate rocks (red) vs other rocks (green).
 
-### Patch Extraction (from preprocessing)
+**Usage:**
+```bash
+python scripts/analysis/duplicate_suppression/visualize_real_duplicates.py
+```
+
+**Output:**
+- PNG files in `outputs/duplicate_visualizations_grouped/`
+- One image per unique patch pair showing ALL duplicates
+
+---
+
+### `find_duplicates_with_tunable_threshold.py`
+Test different distance thresholds to optimize duplicate detection.
+
+**Usage:**
+```bash
+python scripts/analysis/duplicate_suppression/find_duplicates_with_tunable_threshold.py --threshold 15
+```
+
+**Threshold selection:**
+- **5px** (2.5m): Very strict, may miss some duplicates
+- **10px** (5m): Balanced, catches most duplicates
+- **15px** (7.5m): Recommended - catches all real duplicates
+- **20px** (10m): Permissive, risk of false positives
+
+---
+
+## Expected Results (Test Set)
+
+- **Patches analyzed:** 96 from 6 unique tiles
+- **Duplicates found:** ~8 duplicate rocks
+- **Unique patch pairs:** ~3 pairs with overlaps
+- **Average distance:** 2-3 pixels between duplicates
+
+---
+
+## Usage in Production Pipeline
+
+### During Post-Processing
+After running inference on nationwide tiles:
+
+```bash
+# 1. Run inference on all patches
+python scripts/inference/run_inference.py \
+  --model models/final_model.pt \
+  --source data/switzerland_data/processed/canton_valais \
+  --output outputs/predictions/valais
+
+# 2. Detect duplicates
+python scripts/analysis/duplicate_suppression/find_duplicates_from_labels.py
+
+# 3. Apply NMS during shapefile creation
+python scripts/postprocessing/yolo_to_shapefile.py \
+  --tif_dir data/switzerland_data/tiles/canton_valais \
+  --labels_dir outputs/predictions/valais/predict/labels \
+  --out outputs/shapefiles/valais_clean.shp \
+  --nms_iou 0.5  # Remove duplicates
+```
+
+---
+
+## ⚙️ Parameters
+
+### Patch Configuration
 - **Patch size:** 640×640 pixels
-- **Overlap:** 210 pixels
-- **Stride:** 430 pixels (640 - 210)
+- **Overlap:** 210 pixels (33%)
+- **Stride:** 430 pixels
+- **Effective overlap region:** 210×210 px at boundaries
 
 ### Duplicate Detection
-- **Distance threshold:** 5 pixels (label-based method)
-- **IoU threshold:** 0.9 (shapefile method)
+- **Distance threshold:** 15 pixels (recommended)
+- **At 0.5m resolution:** 15px = 7.5 meters
+- **For 16m rocks:** Well within expected variation
 
 ---
 
-## Next Steps
+## 📝 Notes
 
-1. Run `find_duplicates_from_labels.py` to find real duplicates
-2. Run `compare_methods.py` to see if georeferencing is the issue
-3. If discrepancy exists, fix preprocessing or use label-based NMS
+- Test set patches are already extracted with overlap, so duplicates exist in ground truth
+- Duplicates are expected and normal - not a data quality issue
+- Suppression should be applied in post-processing, not during training
+- For non-georeferenced TIFs, use label-based method (not shapefile NMS)
+```

@@ -4,24 +4,10 @@ This document tracks all improvements made to the baseline rock detection models
 
 ---
 
-## Baseline Performance
+## 📊 Baseline Performance 
 
 ### Objective
 Re-evaluate Alexis's trained models on the test set to establish a reproducible baseline before implementing improvements.
-
-### 📁 Directory Structure
-```
-outputs/
-└── baseline_reproduction/
-    ├── baseline_best_test/
-    │   ├── results.csv
-    │   ├── predictions.json
-    │   └── *.png (plots)
-    └── active_teacher_test/
-        ├── results.csv
-        ├── predictions.json
-        └── *.png (plots)
-```
 
 ### Models Tested
 - `baseline_best.pt` - Best supervised model from Alexis's work
@@ -55,23 +41,53 @@ outputs/
 | | mAP50 | 77.4% | 77.4% | 0.0% ✅ |
 | | mAP50-95 | 43.9% | 43.7% | -0.2% ✅ |
 
-### Key Observations
-1. **Baseline performance confirmed** - Models work as expected
-2. **33 negative samples** in test set (images with no rocks)
-3. **2 duplicate labels removed** automatically by YOLO during validation
-
-### Conclusion
-Baseline models successfully reproduced. Both models perform well (~75-79% mAP50) but suffer from **false positives** as noted by Swisstopo feedback.
+**Conclusion:** Baseline models successfully reproduced. Both models perform well (~75-79% mAP50) but suffer from false positives as noted by Swisstopo feedback.
 
 ---
 
-## Improvement Plan
+## Step 1: Cross-Patch Duplicate Suppression
+
+### Problem
+When 1km tiles are split into overlapping 640×640 patches (210px overlap), rocks in overlap regions are detected multiple times, inflating false positive counts.
+
+### Method
+Developed label-based duplicate detection that converts patch-local YOLO coordinates to tile-global coordinates using patch position and stride calculation.
+
+**Algorithm:**
+```python
+# Convert patch-local normalized coords to tile-global pixels
+stride = patch_size - overlap  # 640 - 210 = 430px
+global_x = (cx * 640) + (col * stride)
+global_y = (cy * 640) + (row * stride)
+
+# Boxes are duplicates if distance < threshold
+distance = sqrt((x1 - x2)² + (y1 - y2)²)
+is_duplicate = distance < 15 pixels  # ~7.5m at 0.5m resolution
+```
+
+### Results
+- **Test set analysis:** 96 patches from 6 unique tiles
+- **Duplicates found:** 8 duplicate rocks across 6 patch pairs
+- **Average distance:** 2.5 pixels between duplicate detections
+- **Detection rate:** ~10% of test set images contain duplicates
+
+**Example:** 
+![alt text](image.png)
+
+### Impact on Metrics
+Duplicate suppression will be applied during **post-processing** on nationwide inference to reduce false positives without retraining models.
+
+### Implementation
+- Scripts: `scripts/analysis/duplicate_suppression/`
+- See `scripts/analysis/duplicate_suppression/README.md` for usage
+
+---
+
+##  Next Steps
 
 ### Planned Experiments
-1. **Duplicate Suppression** - Remove overlapping detections across patch boundaries
-2. **Hard Negative Mining** - Add challenging negative samples (urban, forest, glacier)
-3. **Data Augmentation** - Augment negative samples only
-4. **Focal Loss** - Re-train with focal loss to reduce false positives
-5. **Targeted Negative Samples** - Add 30-50% negative samples from diverse terrain
-
----
+1. ✅ **Duplicate Suppression** - Implemented
+2. ⏭️ **Hard Negative Mining** - Add challenging negative samples (urban, forest, glacier)
+3. ⏭️ **Data Augmentation** - Augment negative samples only
+4. ⏭️ **Focal Loss** - Re-train with focal loss to reduce false positives
+5. ⏭️ **Targeted Negative Samples** - Add 30-50% negative samples from diverse terrain

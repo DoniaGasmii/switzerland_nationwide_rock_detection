@@ -69,7 +69,7 @@ def box_to_global_coords(box, patch_row, patch_col, patch_size=640, overlap=210)
     return global_cx, global_cy, w_pixels, h_pixels
 
 
-def boxes_are_duplicates(box1_global, box2_global, distance_threshold=10.0):
+def boxes_are_duplicates(box1_global, box2_global, distance_threshold=15.0):
     """
     Check if two boxes in global coordinates represent the same rock.
     
