@@ -72,7 +72,7 @@ is_duplicate = distance < 15 pixels  # ~7.5m at 0.5m resolution
 - **Detection rate:** ~10% of test set images contain duplicates
 
 **Example:** 
-![alt text](image.png)
+![alt text](images/duplicates.png)
 
 ### Impact on Metrics
 Duplicate suppression will be applied during **post-processing** on nationwide inference to reduce false positives without retraining models.
@@ -82,12 +82,37 @@ Duplicate suppression will be applied during **post-processing** on nationwide i
 - See `scripts/analysis/duplicate_suppression/README.md` for usage
 
 ---
+## Step 2: Strategic Data Augmentation 
+
+### Problem
+Training set has balanced rock distribution: 46% empty/sparse images vs. 54% medium/dense. But model may struggle with challenging cases (sparse rocks, negative samples).
+
+![](images/rock_distribution.png)
+
+### Strategy
+Apply **targeted augmentation** focusing on difficult samples to reduce false positives:
+- **Empty** (0 rocks): 3x augmentation → Teach "not a rock"
+- **Sparse** (1-3 rocks): 5x augmentation → Hard positives
+- **Medium** (4-10 rocks): 2x augmentation → Balanced samples
+- **Dense** (11+ rocks): No augmentation → Already sufficient examples
+
+![](images/categories.png)
+
+### Approaches to Test
+**A) Uniform Augmentation:** Standard YOLO augmentation on original 800 images (Alexis' baseline)
+**B) Targeted Augmentation:** Pre-augment dataset to ~2,700 images, focusing on sparse/empty samples
+
+### Implementation
+- Scripts: `scripts/analysis/data_augmentation/`
+- See `scripts/analysis/data_augmentation/README.md` for usage
+
+---
 
 ##  Next Steps
 
 ### Planned Experiments
 1. ✅ **Duplicate Suppression** - Implemented
-2. ⏭️ **Hard Negative Mining** - Add challenging negative samples (urban, forest, glacier)
-3. ⏭️ **Data Augmentation** - Augment negative samples only
+2. ⏭️ **Data Augmentation** - Augment negative samples only
+3. ⏭️ **Hard Negative Mining** - Add challenging negative samples (urban, forest, glacier)
 4. ⏭️ **Focal Loss** - Re-train with focal loss to reduce false positives
 5. ⏭️ **Targeted Negative Samples** - Add 30-50% negative samples from diverse terrain

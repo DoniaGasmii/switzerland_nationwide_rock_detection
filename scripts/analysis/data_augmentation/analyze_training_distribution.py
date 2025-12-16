@@ -43,24 +43,205 @@ def categorize_images(rock_counts):
     
     return categories
 
-
+def visualize_category_samples(categories, images_dir, labels_dir, output_dir):
+    """
+    Visualize one sample image from each category with bounding boxes.
+    """
+    import rasterio
+    import cv2
+    from matplotlib.patches import Rectangle
+    
+    # Select one sample from each category
+    samples = {}
+    for category, images in categories.items():
+        if images:
+            # Pick the first image from each category
+            samples[category] = images[0]
+    
+    if not samples:
+        print("⚠️  No samples to visualize")
+        return
+    
+    # Create visualization
+    n_samples = len(samples)
+    fig, axes = plt.subplots(1, n_samples, figsize=(6*n_samples, 6))
+    
+    if n_samples == 1:
+        axes = [axes]
+    
+    for idx, (category, img_name) in enumerate(samples.items()):
+        ax = axes[idx]
+        
+        # Load image
+        img_path = images_dir / f"{img_name}.tif"
+        
+        if not img_path.exists():
+            ax.text(0.5, 0.5, 'Image not found', ha='center', va='center')
+            ax.set_title(f'{category.capitalize()}\n(not found)')
+            continue
+        
+        try:
+            # Read image with rasterio (handles georeferenced TIFs)
+            with rasterio.open(img_path) as src:
+                image = src.read()
+                
+                # Convert to displayable format
+                if image.shape[0] == 3:
+                    image = np.transpose(image, (1, 2, 0))
+                elif image.shape[0] == 1:
+                    image = image[0]
+                    image = np.stack([image]*3, axis=-1)  # Convert to RGB
+                
+                # Normalize for display
+                if image.dtype == np.uint16:
+                    image = (image / 65535.0 * 255).astype(np.uint8)
+                elif image.dtype in [np.float32, np.float64]:
+                    image = (np.clip(image, 0, 1) * 255).astype(np.uint8)
+        except Exception as e:
+            print(f"⚠️  Error loading {img_path}: {e}")
+            ax.text(0.5, 0.5, f'Error loading\n{e}', ha='center', va='center')
+            ax.set_title(f'{category.capitalize()}\n(error)')
+            continue
+        
+        # Display image
+        ax.imshow(image)
+        
+        # Load and draw bounding boxes
+        label_path = labels_dir / f"{img_name}.txt"
+        n_boxes = 0
+        
+        if label_path.exists():
+            with open(label_path, 'r') as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) >= 5:
+                        # YOLO format: class cx cy w h
+                        cx, cy, w, h = map(float, parts[1:5])
+                        
+                        # Convert normalized coords to pixels
+                        img_h, img_w = image.shape[:2]
+                        
+                        x_center = cx * img_w
+                        y_center = cy * img_h
+                        box_w = w * img_w
+                        box_h = h * img_h
+                        
+                        x_min = x_center - box_w / 2
+                        y_min = y_center - box_h / 2
+                        
+                        # Draw bounding box
+                        rect = Rectangle(
+                            (x_min, y_min), box_w, box_h,
+                            linewidth=2, edgecolor='red', facecolor='none'
+                        )
+                        ax.add_patch(rect)
+                        n_boxes += 1
+        
+        # Color coding by category
+        colors = {
+            'empty': '#ff6b6b',
+            'sparse': '#feca57',
+            'medium': '#48dbfb',
+            'dense': '#1dd1a1'
+        }
+        
+        ax.set_title(
+            f'{category.capitalize()}\n{n_boxes} rocks',
+            fontsize=12,
+            fontweight='bold',
+            color=colors.get(category, 'black')
+        )
+        ax.axis('off')
+    
+    plt.tight_layout()
+    plt.savefig(output_dir / "category_samples.png", dpi=150, bbox_inches='tight')
+    print(f"📊 Saved category samples to {output_dir}/category_samples.png")
+    
+    # Save individual images with more detail
+    print("\nSaving detailed individual samples...")
+    
+    for category, img_name in samples.items():
+        fig_single, ax_single = plt.subplots(1, 1, figsize=(10, 10))
+        
+        img_path = images_dir / f"{img_name}.tif"
+        
+        if not img_path.exists():
+            continue
+        
+        try:
+            with rasterio.open(img_path) as src:
+                image = src.read()
+                
+                if image.shape[0] == 3:
+                    image = np.transpose(image, (1, 2, 0))
+                elif image.shape[0] == 1:
+                    image = image[0]
+                    image = np.stack([image]*3, axis=-1)
+                
+                if image.dtype == np.uint16:
+                    image = (image / 65535.0 * 255).astype(np.uint8)
+                elif image.dtype in [np.float32, np.float64]:
+                    image = (np.clip(image, 0, 1) * 255).astype(np.uint8)
+        except Exception as e:
+            print(f"⚠️  Error loading {img_path}: {e}")
+            plt.close(fig_single)
+            continue
+        
+        ax_single.imshow(image)
+        
+        label_path = labels_dir / f"{img_name}.txt"
+        n_boxes = 0
+        
+        if label_path.exists():
+            with open(label_path, 'r') as f:
+                for line in f:
+                    parts = line.strip().split()
+                    if len(parts) >= 5:
+                        cx, cy, w, h = map(float, parts[1:5])
+                        
+                        img_h, img_w = image.shape[:2]
+                        x_center = cx * img_w
+                        y_center = cy * img_h
+                        box_w = w * img_w
+                        box_h = h * img_h
+                        
+                        x_min = x_center - box_w / 2
+                        y_min = y_center - box_h / 2
+                        
+                        rect = Rectangle(
+                            (x_min, y_min), box_w, box_h,
+                            linewidth=3, edgecolor='red', facecolor='none'
+                        )
+                        ax_single.add_patch(rect)
+                        n_boxes += 1
+        
+        ax_single.set_title(
+            f'Sample: {category.capitalize()} Category\n'
+            f'Image: {img_name}.tif | Rocks: {n_boxes}',
+            fontsize=14,
+            fontweight='bold'
+        )
+        ax_single.axis('off')
+        
+        plt.tight_layout()
+        output_path = output_dir / f"sample_{category}.png"
+        plt.savefig(output_path, dpi=150, bbox_inches='tight')
+        print(f"  ✅ Saved {output_path.name}")
+        plt.close(fig_single)
+        
 def main():
-    import os
-    
-    # Navigate to project root
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent
-    os.chdir(project_root)
-    
     print("=" * 80)
     print("TRAINING SET DISTRIBUTION ANALYSIS")
     print("=" * 80)
     print()
     
+    # Use relative path from current directory (no chdir)
     train_labels = Path("data/swisstopo_data/labels/train")
     
     if not train_labels.exists():
-        print(f"Training labels not found: {train_labels}")
+        print(f"❌ Training labels not found: {train_labels.absolute()}")
+        print(f"\nPlease run from project root:")
+        print(f"   cd ~/Switzerland_Expansion/switzerland_nationwide_rock_detection")
         return
     
     # Count rocks per image
@@ -98,18 +279,13 @@ def main():
     ax1.set_title('Distribution of Rocks per Image')
     ax1.grid(True, alpha=0.3)
     
-    # Box plot
+    # Bar plot by category
     ax2 = axes[1]
-    category_data = [
-        [rock_counts[img] for img in categories['empty']],
-        [rock_counts[img] for img in categories['sparse']],
-        [rock_counts[img] for img in categories['medium']],
-        [rock_counts[img] for img in categories['dense']]
-    ]
+    category_counts = [len(categories[cat]) for cat in ['empty', 'sparse', 'medium', 'dense']]
     
-    ax2.bar(range(4), [len(cat) for cat in category_data], 
+    ax2.bar(range(4), category_counts, 
             tick_label=['Empty\n(0)', 'Sparse\n(1-3)', 'Medium\n(4-10)', 'Dense\n(11+)'],
-            edgecolor='black', alpha=0.7)
+            edgecolor='black', alpha=0.7, color=['#ff6b6b', '#feca57', '#48dbfb', '#1dd1a1'])
     ax2.set_ylabel('Number of Images')
     ax2.set_title('Images by Rock Density Category')
     ax2.grid(True, alpha=0.3, axis='y')
@@ -120,7 +296,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     
     plt.savefig(output_dir / "training_distribution.png", dpi=150, bbox_inches='tight')
-    print(f"Saved plot to {output_dir}/training_distribution.png")
+    print(f"📊 Saved plot to {output_dir}/training_distribution.png")
     
     # Save detailed stats
     with open(output_dir / "training_distribution.txt", 'w') as f:
@@ -144,30 +320,47 @@ def main():
         f.write("AUGMENTATION RECOMMENDATIONS:\n")
         f.write("=" * 80 + "\n\n")
         
+        f.write("Approach A (Uniform Augmentation):\n")
+        f.write("  - Apply same augmentation to all images\n")
+        f.write("  - Standard YOLO augmentations during training\n\n")
+        
         sparse_pct = len(categories['sparse']) / len(rock_counts) * 100
         empty_pct = len(categories['empty']) / len(rock_counts) * 100
         
-        f.write("Approach A (Uniform Augmentation):\n")
-        f.write("  - Apply same augmentation to all images\n")
-        f.write("  - Augmentation factor: 3-5x\n\n")
-        
         f.write("Approach B (Targeted Augmentation):\n")
-        f.write(f"  - Empty images ({empty_pct:.1f}%): 0x (no augmentation)\n")
-        f.write(f"  - Sparse images ({sparse_pct:.1f}%): 5-7x augmentation\n")
-        f.write(f"  - Medium images: 3x augmentation\n")
-        f.write(f"  - Dense images: 1x (no augmentation)\n")
+        f.write(f"  - Empty images ({empty_pct:.1f}%): 3x augmentation (reduce false positives)\n")
+        f.write(f"  - Sparse images ({sparse_pct:.1f}%): 5x augmentation (hard cases)\n")
+        f.write(f"  - Medium images: 2x augmentation\n")
+        f.write(f"  - Dense images: No extra augmentation\n")
         f.write("  - Helps balance learning across difficulty levels\n")
     
-    print(f"Saved detailed stats to {output_dir}/training_distribution.txt")
+    print(f"📄 Saved detailed stats to {output_dir}/training_distribution.txt")
     
     print()
+    
+    # Visualize samples from each category
+    print("=" * 80)
+    print("VISUALIZING CATEGORY SAMPLES")
+    print("=" * 80)
+    print()
+    
+    images_dir = Path("data/swisstopo_data/images/train")
+    
+    if images_dir.exists():
+        visualize_category_samples(categories, images_dir, train_labels, output_dir)
+    else:
+        print(f"⚠️  Images directory not found: {images_dir}")
+    
+    print()
+
     print("=" * 80)
     print("NEXT STEPS")
     print("=" * 80)
     print("1. Review distribution plot and stats")
-    print("2. Choose augmentation approach (A or B)")
-    print("3. Run create_augmented_configs.py to generate training configs")
-    print("4. Train models with both approaches and compare")
+    print("2. Choose augmentation approach:")
+    print("   A) Uniform: Standard YOLO augmentation on all images")
+    print("   B) Targeted: Pre-augment sparse images (run create_augmented_dataset.py)")
+    print("3. Train and compare both approaches")
 
 
 if __name__ == "__main__":
