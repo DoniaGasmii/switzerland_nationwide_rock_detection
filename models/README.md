@@ -96,7 +96,7 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 - **Medium** (4-10 rocks): 2x augmentation → Balanced samples
 - **Dense** (11+ rocks): No augmentation → Already sufficient examples
 
-![](images/categories.png)
+![](images/.png)
 
 ### Approaches to Test
 **A) Uniform Augmentation:** Standard YOLO augmentation on original 800 images (Alexis' baseline)
