@@ -72,7 +72,7 @@ is_duplicate = distance < 15 pixels  # ~7.5m at 0.5m resolution
 - **Detection rate:** ~10% of test set images contain duplicates
 
 **Example:** 
-<img src="images/duplicates.png" alt="alt text" width="300"/>
+<img src="images/duplicates.png" alt="alt text" width="600"/>
 ### Impact on Metrics
 Duplicate suppression will be applied during **post-processing** on nationwide inference to reduce false positives without retraining models.
 
