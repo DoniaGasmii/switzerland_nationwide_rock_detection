@@ -72,8 +72,7 @@ is_duplicate = distance < 15 pixels  # ~7.5m at 0.5m resolution
 - **Detection rate:** ~10% of test set images contain duplicates
 
 **Example:** 
-![alt text](images/duplicates.png)
-
+<img src="images/duplicates.png" alt="alt text" width="300"/>
 ### Impact on Metrics
 Duplicate suppression will be applied during **post-processing** on nationwide inference to reduce false positives without retraining models.
 
@@ -100,6 +99,7 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 
 ### Approaches to Test
 **A) Uniform Augmentation:** Standard YOLO augmentation on original 800 images (Alexis' baseline)
+
 **B) Targeted Augmentation:** Pre-augment dataset to ~2,700 images, focusing on sparse/empty samples
 
 ### Implementation
@@ -112,7 +112,7 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 
 ### Planned Experiments
 1. ✅ **Duplicate Suppression** - Implemented
-2. ⏭️ **Data Augmentation** - Augment negative samples only
+2. ✅ **Data Augmentation** - Augment negative samples only
 3. ⏭️ **Hard Negative Mining** - Add challenging negative samples (urban, forest, glacier)
 4. ⏭️ **Focal Loss** - Re-train with focal loss to reduce false positives
 5. ⏭️ **Targeted Negative Samples** - Add 30-50% negative samples from diverse terrain
