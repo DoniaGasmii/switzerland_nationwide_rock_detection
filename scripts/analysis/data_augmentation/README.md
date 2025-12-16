@@ -45,7 +45,7 @@ python scripts/analysis/data_augmentation/create_augmented_dataset.py
 ```
 
 **Augmentation Strategy:**
-- Empty (0 rocks): No augmentation (keep as-is)
+- Empty (0 rocks): 3-5x augmentation (teach "not rock")
 - Sparse (1-3 rocks): 5x augmentation
 - Medium (4-10 rocks): 2x augmentation
 - Dense (11+ rocks): No augmentation (keep as-is)

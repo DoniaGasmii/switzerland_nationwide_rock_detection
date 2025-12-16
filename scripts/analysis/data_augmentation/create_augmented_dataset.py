@@ -144,7 +144,7 @@ def main():
         # Determine category and augmentation factor
         if rock_count == 0:
             category = 'empty'
-            aug_factor = 0  # No augmentation
+            aug_factor = 3  # Augment negatives
         elif rock_count <= 3:
             category = 'sparse'
             aug_factor = 5  # 5x augmentation
