@@ -27,19 +27,33 @@ def count_rocks(label_file):
 
 
 def get_augmentation_pipeline():
-    """Define augmentation pipeline using Albumentations."""
+    """Define safe augmentation pipeline using Albumentations with clipping."""
     return A.Compose([
         A.HorizontalFlip(p=0.5),
         A.VerticalFlip(p=0.2),
         A.RandomRotate90(p=0.5),
-        A.ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=15, p=0.5),
+        A.ShiftScaleRotate(
+            shift_limit=0.1,
+            scale_limit=0.2,
+            rotate_limit=15,
+            border_mode=cv2.BORDER_CONSTANT,  # Important: don't reflect or wrap
+            value=0,  # pad with black
+            p=0.5
+        ),
         A.OneOf([
             A.GaussNoise(var_limit=(10.0, 50.0), p=1.0),
             A.GaussianBlur(blur_limit=(3, 7), p=1.0),
         ], p=0.3),
         A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
         A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.5),
-    ], bbox_params=A.BboxParams(format='yolo', label_fields=['class_labels']))
+    ],
+    bbox_params=A.BboxParams(
+        format='yolo',
+        label_fields=['class_labels'],
+        min_visibility=0.1,   # Discard boxes where <10% remains visible
+        min_area=0.0,         # Keep all boxes (even tiny) unless filtered by visibility
+        clip=True             # ! THIS IS CRITICAL: clip boxes to [0,1]
+    ))
 
 
 def augment_image_and_label(image_path, label_path, output_img_path, output_label_path, transform):

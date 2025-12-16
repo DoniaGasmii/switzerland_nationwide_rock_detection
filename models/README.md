@@ -102,6 +102,8 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 
 **B) Targeted Augmentation:** Pre-augment dataset to ~2,700 images, focusing on sparse/empty samples
 
+![](images/augmentations.png)
+
 ### Implementation
 - Scripts: `scripts/analysis/data_augmentation/`
 - See `scripts/analysis/data_augmentation/README.md` for usage

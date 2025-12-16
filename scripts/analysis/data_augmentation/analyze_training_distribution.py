@@ -292,7 +292,7 @@ def main():
     
     plt.tight_layout()
     
-    output_dir = Path("outputs/training_analysis")
+    output_dir = Path("outputs/data_augmentation/training_analysis")
     output_dir.mkdir(parents=True, exist_ok=True)
     
     plt.savefig(output_dir / "training_distribution.png", dpi=150, bbox_inches='tight')
