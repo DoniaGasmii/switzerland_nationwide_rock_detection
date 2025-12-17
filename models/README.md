@@ -147,8 +147,7 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 - [ ] Run preprocessing pipeline on all remaining Swiss cantons
   - Bern, Vaud, Ticino, Zurich, etc.
 - [ ] Verify tile processing (RGB + hillshade fusion)
-- [ ] Quality check: georeferencing, resolution, coverage
-- [ ] Estimate total tiles for nationwide inference
+- [ ] Quality check
 
 ### **December 23, 2025** Planned
 **Focus:** Advanced training techniques
@@ -165,8 +164,6 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
   - **Faster R-CNN:** Two-stage detector, higher precision, slower inference
   - **DETR (Detection Transformer):** End-to-end, no NMS needed
 - [ ] Train selected architecture on rock detection
-- [ ] Compare inference speed vs. accuracy trade-offs
-- [ ] Decision: Real-time performance vs. accuracy for nationwide deployment
 
 ### **To Be Determined** 📅
 **Early January remotely**, **January 12, 2026**, **January 13, 2026**, **January 14, 2026** 
@@ -174,8 +171,6 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 - [ ] Nationwide inference on all Swiss cantons
 - [ ] Post-processing: Duplicate suppression at scale
 - [ ] Shapefile generation and delivery to Swisstopo
-- [ ] Production deployment and monitoring
-
 ---
 
 ## Success Metrics
