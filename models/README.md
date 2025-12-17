@@ -97,12 +97,31 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 
 ![](images/categories.png)
 
-### Approaches to Test
-**A) Uniform Augmentation:** Standard YOLO augmentation on original 800 images (Alexis' baseline)
+### Approaches Tested
+**A) Baseline + YOLO augmentation:** Alexis' original model with standard YOLO augmentation
 
-**B) Targeted Augmentation:** Pre-augment dataset to ~2,700 images, focusing on sparse/empty samples
+**B) Targeted augmentation + YOLO augmentation:** Pre-augmented dataset (~2,812 images) + YOLO's default augmentations
 
 ![](images/augmentations.png)
+
+### Results
+
+| Model | Precision | Recall | F1 | mAP50 | mAP50-95 |
+|-------|-----------|--------|----|----|----------|
+| **Baseline + YOLO aug** | 75.4% | 76.0% | 75.7% | 79.2% | 44.9% |
+| **Targeted + YOLO aug** | 73.1% | 61.3% | 66.7% | 70.6% | 31.4% |
+| **Change** | -2.3% ❌ | -14.7% ❌ | -9.0% ❌ | -8.6% ❌ | -13.5% ❌ |
+
+### Analysis
+- **Issue 1:** Double augmentation (pre-augmentation + YOLO augmentation) may have over-degraded images
+- **Issue 2:** Aggressive augmentations (5x for sparse, 3x for empty) could have introduced too much noise
+- **Issue 3:** Model may have overfit to augmented artifacts rather than learning rock features
+
+### Next Iterations to Test
+1. **Baseline without augmentation:** Evaluate if YOLO augmentation is actually helping or hurting
+2. **Targeted augmentation only:** Pre-augmented dataset without additional YOLO augmentation during training
+3. **Reduced augmentation intensity:** Lower augmentation factors (2x sparse, 1x empty) with gentler transforms
+4. **Hard negative mining:** Add challenging false positive samples from non-rock regions (forests, urban, glaciers)
 
 ### Implementation
 - Scripts: `scripts/analysis/data_augmentation/`
@@ -110,11 +129,58 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 
 ---
 
-##  Next Steps
+## 🗓️ Project Timeline & Next Steps
 
-### Planned Experiments
-1. ✅ **Duplicate Suppression** - Implemented
-2. ✅ **Data Augmentation** - Augment negative samples only
-3. ⏭️ **Hard Negative Mining** - Add challenging negative samples (urban, forest, glacier)
-4. ⏭️ **Focal Loss** - Re-train with focal loss to reduce false positives
-5. ⏭️ **Targeted Negative Samples** - Add 30-50% negative samples from diverse terrain
+### **December 17, 2025**  In Progress
+**Focus:** Improve augmentation strategy
+- [ ] Re-evaluate baseline **without** YOLO augmentation
+- [ ] Test targeted augmentation **without** additional YOLO augmentation
+- [ ] Reduce augmentation intensity (gentler transforms, lower factors)
+- [ ] Hard negative mining: Collect false positive samples from non-rock regions
+  - Urban areas (Basel, Geneva)
+  - Dense forests (Jura, Plateau)
+  - Glaciers (Alps)
+- [ ] Train with hard negatives integrated into dataset
+
+### **December 19, 2025** Planned
+**Focus:** Nationwide data preparation
+- [ ] Run preprocessing pipeline on all remaining Swiss cantons
+  - Bern, Vaud, Ticino, Zurich, etc.
+- [ ] Verify tile processing (RGB + hillshade fusion)
+- [ ] Quality check: georeferencing, resolution, coverage
+- [ ] Estimate total tiles for nationwide inference
+
+### **December 23, 2025** Planned
+**Focus:** Advanced training techniques
+- [ ] Implement focal loss training
+  - Target: Reduce false positives by penalizing easy negatives
+  - Compare focal loss vs. standard cross-entropy
+- [ ] Hyperparameter tuning for focal loss (alpha, gamma)
+- [ ] Evaluate on test set and compare to baseline
+
+### **December 26, 2025**  Planned
+**Focus:** Alternative model architectures
+- [ ] Explore non-YOLO detectors for single-object detection:
+  - **RetinaNet:** Strong with focal loss, excellent for small objects
+  - **Faster R-CNN:** Two-stage detector, higher precision, slower inference
+  - **DETR (Detection Transformer):** End-to-end, no NMS needed
+- [ ] Train selected architecture on rock detection
+- [ ] Compare inference speed vs. accuracy trade-offs
+- [ ] Decision: Real-time performance vs. accuracy for nationwide deployment
+
+### **To Be Determined** 📅
+**Early January remotely**, **January 12, 2026**, **January 13, 2026**, **January 14, 2026** 
+- [ ] Final model selection based on precision/recall requirements
+- [ ] Nationwide inference on all Swiss cantons
+- [ ] Post-processing: Duplicate suppression at scale
+- [ ] Shapefile generation and delivery to Swisstopo
+- [ ] Production deployment and monitoring
+
+---
+
+## Success Metrics
+
+Target improvements over baseline (mAP50: 79.2%, Precision: 75.4%):
+- **Primary:** Precision > 80% (fewer false positives for Swisstopo)
+- **Secondary:** Maintain recall > 70% (don't miss too many rocks)
+- **Stretch:** mAP50 > 82% (overall detection quality)
