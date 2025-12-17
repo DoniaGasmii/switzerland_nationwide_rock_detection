@@ -104,29 +104,34 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 
 ![](images/augmentations.png)
 
-### Results
+### Results - Augmentation Strategy Comparison
 
-| Model | Precision | Recall | F1 | mAP50 | mAP50-95 |
-|-------|-----------|--------|----|----|----------|
-| **Baseline + YOLO aug** | 75.4% | 76.0% | 75.7% | 79.2% | 44.9% |
-| **Targeted + YOLO aug** | 73.1% | 61.3% | 66.7% | 70.6% | 31.4% |
-| **Change** | -2.3% ❌ | -14.7% ❌ | -9.0% ❌ | -8.6% ❌ | -13.5% ❌ |
+| Model | Precision | Recall | F1 | mAP50 | mAP50-95 | Notes |
+|-------|-----------|--------|----|----|----------|-------|
+| **Baseline + YOLO aug** | **75.4%** | **76.0%** | **75.7%** | **79.2%** | **44.9%** | Original Alexis model |
+| **Pre-aug data only (no YOLO aug)** | 54.5% | 60.2% | 57.2% | 57.9% | 29.6% | Overfitted to augmented artifacts ❌ |
+| **Pre-aug + YOLO aug** | 73.1% | 61.3% | 66.7% | 70.6% | 31.4% | Double augmentation too aggressive ❌ |
+| **Pre-aug (standard intensity)** | 64.9% | 55.3% | 59.7% | 63.5% | 33.9% | Moderate augmentation ⚠️ |
+| **Pre-aug (stricter/more aug)** | 68.9% | 58.9% | 63.5% | 66.3% | 35.2% | More augmentation helps slightly ⚠️ |
+| **Pre-aug (gentler/less aug)** | 62.8% | 60.5% | 61.6% | 64.2% | 35.2% | Better recall, lower precision ⚠️ |
 
-### Analysis
-- **Issue 1:** Double augmentation (pre-augmentation + YOLO augmentation) may have over-degraded images
-- **Issue 2:** Aggressive augmentations (5x for sparse, 3x for empty) could have introduced too much noise
-- **Issue 3:** Model may have overfit to augmented artifacts rather than learning rock features
+### Key Findings
 
-### Next Iterations to Test
-1. **Baseline without augmentation:** Evaluate if YOLO augmentation is actually helping or hurting
-2. **Targeted augmentation only:** Pre-augmented dataset without additional YOLO augmentation during training
-3. **Reduced augmentation intensity:** Lower augmentation factors (2x sparse, 1x empty) with gentler transforms
-4. **Hard negative mining:** Add challenging false positive samples from non-rock regions (forests, urban, glaciers)
+**Best performing:** Baseline with YOLO augmentation (mAP50: 79.2%)
+
+**Worst performing:** Pre-augmented data without any online augmentation (mAP50: 57.9%)
+- Model overfit to specific augmented versions
+- Lost ability to generalize to original image distribution
 
 ### Implementation
 - Scripts: `scripts/analysis/data_augmentation/`
 - See `scripts/analysis/data_augmentation/README.md` for usage
 
+### Conclusion
+
+**Pre-augmentation strategy is not effective for this task.**
+
+The model benefits from **online augmentation diversity** during training rather than fixed pre-augmented examples. YOLO's default augmentation pipeline (applied during training) provides better generalization than our targeted pre-augmentation approach.
 ---
 
 ## 🗓️ Project Timeline & Next Steps
