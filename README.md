@@ -68,7 +68,7 @@ python scripts/preprocessing/download_tiles.py \
 ```
 
 > **How to get the CSV:**
-> 1. Visit [Swisstopo](https://www.swisstopo.admin.ch/)
+> 1. Visit [Swisstopo-swissimage](https://www.swisstopo.admin.ch/fr/orthophotos-swissimage-10-cm) and  [Swisstopo-DSM](https://www.swisstopo.admin.ch/fr/modele-altimetrique-swisssurface3d-raster) 
 > 2. Select: **Mode de sélection** → Sélection par canton → *Your canton*
 > 3. **Format:** Cloud Optimized GeoTIFF
 > 4. **Résolution:** 0.1 m (for SWISSIMAGE) or 0.5 m (for DSM)
