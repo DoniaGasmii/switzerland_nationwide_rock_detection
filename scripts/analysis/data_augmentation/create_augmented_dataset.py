@@ -29,23 +29,23 @@ def count_rocks(label_file):
 def get_augmentation_pipeline():
     """Define safe augmentation pipeline using Albumentations with clipping."""
     return A.Compose([
-        A.HorizontalFlip(p=0.5),
-        A.VerticalFlip(p=0.2),
+        A.HorizontalFlip(p=0.7),
+        A.VerticalFlip(p=0.7),
         A.RandomRotate90(p=0.5),
-        A.ShiftScaleRotate(
-            shift_limit=0.1,
-            scale_limit=0.2,
-            rotate_limit=15,
-            border_mode=cv2.BORDER_CONSTANT,  # Important: don't reflect or wrap
-            value=0,  # pad with black
-            p=0.5
-        ),
+        # A.ShiftScaleRotate(
+        #     shift_limit=0.2,
+        #     scale_limit=0.3,
+        #     rotate_limit=17,
+        #     border_mode=cv2.BORDER_CONSTANT,  # Important: don't reflect or wrap
+        #     value=0,  # pad with black
+        #     p=0.5
+        # ),
         A.OneOf([
-            A.GaussNoise(var_limit=(10.0, 50.0), p=1.0),
+            A.GaussNoise(var_limit=(10.0, 60.0), p=1.0),
             A.GaussianBlur(blur_limit=(3, 7), p=1.0),
         ], p=0.3),
-        A.RandomBrightnessContrast(brightness_limit=0.2, contrast_limit=0.2, p=0.5),
-        A.HueSaturationValue(hue_shift_limit=10, sat_shift_limit=20, val_shift_limit=10, p=0.5),
+        A.RandomBrightnessContrast(brightness_limit=0.4, contrast_limit=0.4, p=0.5),
+        A.HueSaturationValue(hue_shift_limit=12, sat_shift_limit=22, val_shift_limit=10, p=0.5),
     ],
     bbox_params=A.BboxParams(
         format='yolo',
@@ -127,7 +127,7 @@ def main():
     src_images = Path("data/swisstopo_data/images/train")
     src_labels = Path("data/swisstopo_data/labels/train")
     
-    dst_base = Path("data/augmented_swisstopo_data")
+    dst_base = Path("data/more_augmented_swisstopo_data")
     dst_images_train = dst_base / "images" / "train"
     dst_labels_train = dst_base / "labels" / "train"
     
@@ -158,16 +158,16 @@ def main():
         # Determine category and augmentation factor
         if rock_count == 0:
             category = 'empty'
-            aug_factor = 3  # Augment negatives
+            aug_factor = 5  # Augment negatives
         elif rock_count <= 3:
             category = 'sparse'
             aug_factor = 5  # 5x augmentation
         elif rock_count <= 10:
             category = 'medium'
-            aug_factor = 2  # 2x augmentation
+            aug_factor = 3  # 2x augmentation
         else:
             category = 'dense'
-            aug_factor = 0  # No augmentation
+            aug_factor = 3  # No augmentation
         
         stats[category]['original'] += 1
         
