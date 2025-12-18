@@ -122,7 +122,9 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 **Pre-augmentation strategy is not effective for this task.**
 
 The model benefits from **online augmentation diversity** during training rather than fixed pre-augmented examples. YOLO's default augmentation pipeline (applied during training) provides better generalization than our targeted pre-augmentation approach.
+
 ---
+
 ## Step 3: Hard Negative Mining 
 
 ### Problem
