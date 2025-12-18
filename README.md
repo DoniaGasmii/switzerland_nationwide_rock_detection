@@ -194,5 +194,3 @@ pip install ultralytics rasterio geopandas shapely numpy opencv-python
 - **Original project:** [Alexis Rufer](https://github.com/alexs-rufer/large-rocks-mapping.git)
 - **Data provider:** [Swisstopo](https://www.swisstopo.admin.ch/)
 - **Supervision:** Prof. Devis Tuia, Valérie Zermatten (EPFL ECEO Lab)
-```
-
