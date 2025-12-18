@@ -4,7 +4,7 @@ This document tracks all improvements made to the baseline rock detection models
 
 ---
 
-## 📊 Baseline Performance 
+## Baseline Performance 
 
 ### Objective
 Re-evaluate Alexis's trained models on the test set to establish a reproducible baseline before implementing improvements.
@@ -101,9 +101,7 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 **A) Baseline + YOLO augmentation:** Alexis' original model with standard YOLO augmentation
 
 **B) Targeted augmentation + YOLO augmentation:** Pre-augmented dataset (~2,812 images) + YOLO's default augmentations
-
-![](images/augmentations.png)
-
+<img src="images/augmentations.png" alt="alt text" width="700"/>
 ### Results - Augmentation Strategy Comparison
 
 | Model | Precision | Recall | F1 | mAP50 | mAP50-95 | Notes |
@@ -139,9 +137,9 @@ The model benefits from **online augmentation diversity** during training rather
 
 ### **December 17, 2025**  In Progress
 **Focus:** Improve augmentation strategy
-- [ ] Re-evaluate baseline **without** YOLO augmentation
-- [ ] Test targeted augmentation **without** additional YOLO augmentation
-- [ ] Reduce augmentation intensity (gentler transforms, lower factors)
+- [-] Re-evaluate baseline **without** YOLO augmentation
+- [-] Test targeted augmentation **without** additional YOLO augmentation
+- [-] Reduce augmentation intensity (gentler transforms, lower factors)
 - [ ] Hard negative mining: Collect false positive samples from non-rock regions
   - Urban areas (Basel, Geneva)
   - Dense forests (Jura, Plateau)
@@ -152,9 +150,6 @@ The model benefits from **online augmentation diversity** during training rather
 **Focus:** Nationwide data preparation
 - [ ] Run preprocessing pipeline on all remaining Swiss cantons
   - Bern, Vaud, Ticino, Zurich, etc.
-- [ ] Verify tile processing (RGB + hillshade fusion)
-- [ ] Quality check
-
 ### **December 23, 2025** Planned
 **Focus:** Advanced training techniques
 - [ ] Implement focal loss training
