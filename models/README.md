@@ -113,14 +113,6 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 | **Pre-aug (stricter/more aug)** | 68.9% | 58.9% | 63.5% | 66.3% | 35.2% | More augmentation helps slightly ⚠️ |
 | **Pre-aug (gentler/less aug)** | 62.8% | 60.5% | 61.6% | 64.2% | 35.2% | Better recall, lower precision ⚠️ |
 
-### Key Findings
-
-**Best performing:** Baseline with YOLO augmentation (mAP50: 79.2%)
-
-**Worst performing:** Pre-augmented data without any online augmentation (mAP50: 57.9%)
-- Model overfit to specific augmented versions
-- Lost ability to generalize to original image distribution
-
 ### Implementation
 - Scripts: `scripts/analysis/data_augmentation/`
 - See `scripts/analysis/data_augmentation/README.md` for usage
