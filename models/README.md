@@ -122,21 +122,57 @@ Apply **targeted augmentation** focusing on difficult samples to reduce false po
 **Pre-augmentation strategy is not effective for this task.**
 
 The model benefits from **online augmentation diversity** during training rather than fixed pre-augmented examples. YOLO's default augmentation pipeline (applied during training) provides better generalization than our targeted pre-augmentation approach.
+---
+## Step 3: Hard Negative Mining 
+
+### Problem
+Model produces false positives in non-rock terrain (urban areas, dense forests, glaciers). Training set lacks diverse negative samples from these challenging environments.
+
+### Strategy
+Collect **~2000 negative samples** (no rocks) from regions not represented in current training data to teach model what is **NOT** a rock.
+
+**Target ratio:** 2:1 negative:positive samples (~2000 negatives for ~1000 positive rock tiles)
+
+### Sampling Locations
+
+**Urban Areas (~700 tiles):**
+- Zürich city center (buildings, roads, parks)
+- Geneva/Lausanne lakefront (urban waterfront, residential)
+- Basel Rhine port (industrial, infrastructure)
+
+**Dense Forests (~700 tiles):**
+- Jura forests near Neuchâtel (deciduous, thick canopy)
+- Mittelland Aare Valley (lowland forest, agriculture)
+- Emmental hills (rolling forested terrain)
+
+**Glaciers/Snowfields (~700 tiles):**
+- Aletsch Glacier upper plateau (smooth ice fields)
+- Gorner Glacier near Zermatt (high-altitude ice)
+- Jungfraufirn snow basin (accumulation zones)
+
+### Implementation
+1. Extract tiles from target regions using preprocessing pipeline
+2. Manually verify absence of large rocks (>5×5×5m)
+3. Integrate hard negatives into training set (empty label files)
+4. Retrain model with different positive/negative ratios 
+5. Evaluate false positive reduction on test set
 
 ---
 
 ## 🗓️ Project Timeline & Next Steps
 
-### **December 17, 2025**  In Progress
+### **December 17, 2025** 
 **Focus:** Improve augmentation strategy
 - [-] Re-evaluate baseline **without** YOLO augmentation
 - [-] Test targeted augmentation **without** additional YOLO augmentation
 - [-] Reduce augmentation intensity (gentler transforms, lower factors)
+### **December 18, 2025**  In Progress
 - [ ] Hard negative mining: Collect false positive samples from non-rock regions
   - Urban areas (Basel, Geneva)
   - Dense forests (Jura, Plateau)
   - Glaciers (Alps)
-- [ ] Train with hard negatives integrated into dataset
+- [ ] Train with hard negatives integrated into dataset with different ratios
+- [ ] Evaluate
 
 ### **December 19, 2025** Planned
 **Focus:** Nationwide data preparation
