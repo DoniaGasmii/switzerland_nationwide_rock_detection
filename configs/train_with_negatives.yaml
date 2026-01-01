@@ -1,7 +1,7 @@
 # Training config for balanced dataset - YOLO default augmentations
 model: yolo11m.pt
 data: data/negative_samples/balanced_dataset/data.yaml
-epochs: 100
+epochs: 200
 batch: 8
 imgsz: 640
 device: 0
